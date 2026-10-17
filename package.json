@@ -1,0 +1,9 @@
+{
+  "name": "luma-local",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first control for compatible Wi-Fi lighting",
+  "scripts": {"start":"node server.mjs","demo":"node demo.mjs","test":"node --test"},
+  "engines": {"node":">=20"}
+}

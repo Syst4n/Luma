@@ -5,6 +5,15 @@ export function toggleSelection(selection,id,available){
  if(next.has(id))next.delete(id);else next.add(id);
  return next;
 }
+export function chooseTarget(current,id,available){
+ return id==='all'||available.includes(id)?id:current;
+}
+export function targetIds(target,available){
+ return target==='all'?[...available]:available.includes(target)?[target]:[];
+}
+export function dispatchTargets(ids,send){
+ return Promise.allSettled(ids.map(id=>Promise.resolve().then(()=>send(id))));
+}
 export function rangeValueAt(clientX,left,width,min,max,step=1){
  if(width<=0)return min;
  const fraction=Math.max(0,Math.min(1,(clientX-left)/width));

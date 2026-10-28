@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {toggleSelection,rangeValueAt,bulbRgb,contrastInk,LatestControls} from '../public/controls.js';
+import {toggleSelection,chooseTarget,targetIds,dispatchTargets,rangeValueAt,bulbRgb,contrastInk,LatestControls} from '../public/controls.js';
 test('cards independently toggle through none, one and both selected',()=>{
  let selected=new Set();selected=toggleSelection(selected,'studio',['studio','reading']);assert.deepEqual([...selected],['studio']);
  selected=toggleSelection(selected,'reading',['studio','reading']);assert.deepEqual([...selected],['studio','reading']);
@@ -37,4 +37,20 @@ test('a release commit is sent after an in-flight final slider move',async()=>{
  const move=queue.enqueue('studio',{brightness:100});await new Promise(r=>setTimeout(r,5));
  const released=queue.enqueue('studio',{brightness:100});release();await Promise.all([move,released]);
  assert.deepEqual(sent,[100,100]);
+});
+
+test('control target stays single choice and independent of card selection',()=>{
+ const ids=['studio','reading'];let cards=new Set(ids),target='all';
+ target=chooseTarget(target,'all',ids);assert.equal(target,'all');
+ target=chooseTarget(target,'studio',ids);target=chooseTarget(target,'studio',ids);
+ assert.equal(target,'studio');assert.deepEqual([...cards],ids);assert.deepEqual(targetIds(target,ids),['studio']);
+ cards=toggleSelection(cards,'studio',ids);assert.equal(target,'studio');assert.deepEqual([...cards],['reading']);
+ target=chooseTarget(target,'all',ids);assert.deepEqual(targetIds(target,ids),ids);assert.deepEqual([...cards],['reading']);
+ assert.equal(chooseTarget(target,'missing',ids),'all');assert.deepEqual(targetIds('missing',ids),[]);
+});
+test('both targets start concurrently and report individual failures',async()=>{
+ let release;const gate=new Promise(resolve=>release=resolve),started=[];
+ const results=dispatchTargets(['studio','reading'],async id=>{started.push(id);if(id==='studio'){await gate;throw Error('offline');}return 'ok';});
+ await new Promise(resolve=>setTimeout(resolve,0));assert.deepEqual(started,['studio','reading']);
+ release();const settled=await results;assert.equal(settled[0].status,'rejected');assert.equal(settled[0].reason.message,'offline');assert.deepEqual(settled[1],{status:'fulfilled',value:'ok'});
 });
